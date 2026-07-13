@@ -84,10 +84,24 @@ def read_text(path, limit=200 * 1024 * 1024):
 
 
 # ---------------------------------------------------------------- install
+# Markers that identify a directory as a Grok Build install specifically —
+# not just any tool's dotfolder. This matters because pointing the auditor at,
+# say, ~/.codex should say "that isn't Grok" rather than silently find nothing
+# (a confusing false all-clear) or crash. Other coding CLIs (Codex, Claude Code)
+# have entirely different layouts and, crucially, a different data model — they
+# don't do Grok's full-repo tarball upload — so this tool is Grok-scoped by
+# design. See README "Scope" for why a Codex audit would be a different tool.
+GROK_MARKERS = ["logs/unified.jsonl", "agent_id", "worktrees.db",
+                "active_sessions.json"]
+
+
 def detect_install(grok):
     info = {"grok_dir": grok, "installed": os.path.isdir(grok)}
     if not info["installed"]:
+        info["is_grok_install"] = False
         return info
+    info["is_grok_install"] = any(
+        os.path.exists(os.path.join(grok, m)) for m in GROK_MARKERS)
     v = os.path.join(grok, "version.json")
     if os.path.isfile(v):
         try:
@@ -143,6 +157,9 @@ def parse_unified_log(grok):
          "sid_repos": defaultdict(set), "endpoints": set(),
          "artifact_refs": defaultdict(int)}
     if not r["log_found"]:
+        # normalize sets → lists so the summary stays JSON-serializable even
+        # when there's no log to parse (e.g. dir isn't a Grok install).
+        r["versions"], r["endpoints"] = [], []
         return r
     art_re = re.compile(r"turn_\d+/(?:before_|after_)?([a-z_]+?)(?:\.tar\.gz|\.json)")
     with open(path, "r", errors="ignore") as f:
@@ -457,6 +474,14 @@ def main():
         print(json.dumps({"installed": False, "grok_dir": grok}))
         log("Grok CLI not found — nothing to audit.")
         return 1
+    if not install["is_grok_install"]:
+        print(json.dumps({"installed": True, "is_grok_install": False,
+                          "grok_dir": grok}, indent=2))
+        log(f"{grok} exists but is not a Grok Build install (no {GROK_MARKERS}).")
+        log("This tool audits the Grok Build CLI specifically. Other coding "
+            "CLIs (Codex, Claude Code) use a different layout and do not perform "
+            "Grok's full-repository upload — see the README 'Scope' section.")
+        return 3
     os.makedirs(outdir, exist_ok=True)
 
     log("reading account identity (non-secret fields only)")

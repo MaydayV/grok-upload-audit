@@ -63,8 +63,27 @@ mitigation config already present), `consent_evidence`, `upload_summary`
 Useful flags: `--grok-dir PATH` (non-default location), `--output-dir PATH`,
 `--no-log-copy` (skip gzipping the full raw log if disk/size is a concern).
 
-If `installed:false` comes back, Grok isn't on this machine — tell the user
-there's nothing to audit and stop.
+Exit codes: `installed:false` (code 1) means Grok isn't on this machine — tell
+the user there's nothing to audit and stop. `is_grok_install:false` (code 3)
+means the directory exists but isn't a Grok Build install — this is what you get
+if someone points the tool at `~/.codex` or `~/.claude`. Don't try to audit it;
+explain the scope (below) instead.
+
+**Scope — this is Grok-specific by design; it is not a general "did any AI CLI
+upload my code" tool.** Users often ask whether it also covers OpenAI Codex or
+Claude Code. It does not, and shouldn't be forced to, because the *behavior* it
+detects is Grok-specific: Grok Build packages the whole repository into tarballs
+and uploads them to an xAI GCS bucket, with the switch flippable remotely. Codex
+and Claude Code use a different data model — per OpenAI's own (open-source)
+analytics and confirmable from `~/.codex`'s contents (no `unified.jsonl`, no
+`repo_state.upload.*` events, no storage-bucket endpoints), Codex sends anonymous
+health metrics without your codebase or PII, and keeps session history locally.
+So making this skill claim to "audit Codex uploads" would manufacture a finding
+that the evidence doesn't support — the exact overclaiming this skill avoids. If
+a user asks about Codex, give them that honest answer rather than running the
+auditor against `~/.codex`. (The one legitimate cross-tool angle is already
+covered: `crosstool_path_refs` and `secret_findings` check whether *Grok* read
+another tool's credentials, not whether that other tool uploaded anything.)
 
 For the detailed meaning of every field, artifact type, and how to read the
 consent flags, see `references/log-format.md`.

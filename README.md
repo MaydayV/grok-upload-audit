@@ -65,6 +65,36 @@ is built around that principle:
 - **Home-directory guard.** The scanner refuses to treat `$HOME` as a repository,
   so it won't sweep your entire home folder.
 
+## Scope: does this work for Codex or other AI CLIs?
+
+**No — and that's deliberate.** This tool audits the **Grok Build CLI
+specifically**, because the behavior it detects is specific to Grok: packaging
+your whole repository into `tar.gz` archives and uploading them to an xAI Google
+Cloud Storage bucket, with the upload switch flippable remotely by the vendor.
+
+OpenAI Codex and Claude Code use a **different data model.** They are API-based
+agents that send only the task-relevant context to their model endpoint — the
+same as any LLM API call — and do **not** upload your whole codebase to a storage
+bucket. This isn't just taking the vendors' word for it: it's confirmable from
+what they leave on disk. `~/.codex`, for example, has no `unified.jsonl`, no
+`repo_state.upload.*` events, and no storage-bucket endpoints in its session
+files; Codex's analytics are anonymous health metrics (no code, no PII) and its
+[collection code is open source](https://github.com/openai/codex). Session
+history is kept **locally**.
+
+Because of that, pointing this auditor at `~/.codex` or `~/.claude` would find no
+upload evidence — not because it failed, but because there's nothing of that kind
+to find. Rather than manufacture a misleading "all clear" (or, worse, a false
+alarm), the tool detects that the target isn't a Grok install and says so
+(exit code 3). Auditing Codex's actual privacy surface — local session
+retention, the telemetry opt-out — would be a genuinely *different* tool with
+different logic, not a rename of this one.
+
+The one cross-tool angle this skill *does* cover: it checks whether **Grok** read
+your other tools' credentials (e.g. whether values from `~/.codex/auth.json`
+leaked into Grok's uploaded session state). That's about what Grok took, not what
+Codex sent.
+
 ## Requirements
 
 - [Claude Code](https://claude.com/claude-code) (the skill triggers within it).
@@ -114,7 +144,8 @@ Options:
 | `--no-log-copy` | Skip gzipping the full raw log into the evidence package. |
 
 It prints a JSON digest to stdout and writes the full findings to
-`audit_summary.json`. Exit code `1` means Grok isn't installed.
+`audit_summary.json`. Exit codes: `1` = Grok isn't installed; `3` = the target
+directory exists but isn't a Grok install (see [Scope](#scope-does-this-work-for-codex-or-other-ai-clis)).
 
 ## What you get
 
