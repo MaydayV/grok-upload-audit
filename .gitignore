@@ -1,0 +1,14 @@
+# Audit outputs contain your account IDs, session IDs and repo paths — never commit them.
+grok-upload-audit-*/
+grok-data-deletion-evidence/
+audit_summary.json
+xAI-Data-Deletion-Request.md
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# OS
+.DS_Store
