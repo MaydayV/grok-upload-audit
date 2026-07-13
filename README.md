@@ -1,8 +1,14 @@
 # grok-upload-audit
 
-A [Claude Code](https://claude.com/claude-code) skill that forensically audits
-what the **xAI Grok Build CLI** uploaded from your machine — and helps you do
-something about it.
+An **agent skill** — for [Claude Code](https://claude.com/claude-code),
+[OpenAI Codex](https://github.com/openai/codex), and any other coding agent that
+loads `SKILL.md` skills — that forensically audits what the **xAI Grok Build
+CLI** uploaded from your machine, and helps you do something about it.
+
+> Works the same whichever agent you run it from: the audit logic is a
+> self-contained Python script (standard library only), and the skill uses the
+> portable `SKILL.md` format both harnesses share. So a Codex user can audit
+> Grok exactly as a Claude Code user can. See [Installation](#installation).
 
 Grok Build stores everything it does under `~/.grok`. In affected versions it
 packages your working repository into `tar.gz` archives and uploads them — along
@@ -97,42 +103,59 @@ Codex sent.
 
 ## Requirements
 
-- [Claude Code](https://claude.com/claude-code) (the skill triggers within it).
+- A coding agent that loads `SKILL.md` skills — [Claude Code](https://claude.com/claude-code),
+  [OpenAI Codex](https://github.com/openai/codex), or similar. (You can also run
+  the auditor standalone with no agent at all — see [Standalone](#standalone-just-the-report).)
 - Python 3.8+ (standard library only — no third-party packages).
 - macOS or Linux. Grok Build installed at `~/.grok` (or pass `--grok-dir`).
 
 ## Installation
 
-Clone directly into your Claude Code skills directory:
+Clone into your agent's skills directory. Both use the same skill format, so the
+only difference is the destination:
+
+**Claude Code** — `~/.claude/skills/`:
 
 ```bash
 git clone https://github.com/MaydayV/grok-upload-audit \
   ~/.claude/skills/grok-upload-audit
 ```
 
-Claude Code discovers it automatically. That's it.
+**OpenAI Codex** — `~/.codex/skills/`:
 
-To update later: `git -C ~/.claude/skills/grok-upload-audit pull`.
+```bash
+git clone https://github.com/MaydayV/grok-upload-audit \
+  ~/.codex/skills/grok-upload-audit
+```
+
+Your agent discovers it automatically on next launch. To update later, `git pull`
+in that directory.
+
+> The repo ships both an agent-neutral `SKILL.md` and an optional
+> `agents/openai.yaml` that gives Codex a display name and default prompt —
+> Claude Code ignores the latter, Codex uses it, neither needs it.
 
 ## Usage
 
-### Via Claude Code (recommended)
+### Via your coding agent (recommended)
 
-Just describe the concern in plain language and the skill triggers:
+Just describe the concern in plain language and the skill triggers — the same in
+Claude Code or Codex:
 
 - *"Did Grok upload my code to xAI? Check my machine."*
 - *"There's news that Grok CLI uploads project code — audit mine and draft a deletion request."*
 - *"Did Grok leak any of my API keys?"*
 
-Claude runs the audit, explains the findings, and — if you want — writes the
+The agent runs the audit, explains the findings, and — if you want — writes the
 deletion letter and applies the upload block, walking you through each step.
 
 ### Standalone (just the report)
 
-You can also run the auditor directly, without Claude:
+You can also run the auditor directly, without any agent — it's a plain script:
 
 ```bash
-python3 ~/.claude/skills/grok-upload-audit/scripts/grok_audit.py
+# from wherever you cloned it (~/.claude/skills/…, ~/.codex/skills/…, or anywhere)
+python3 grok-upload-audit/scripts/grok_audit.py
 ```
 
 Options:

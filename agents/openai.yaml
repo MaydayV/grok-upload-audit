@@ -1,0 +1,4 @@
+interface:
+  display_name: "Grok Upload Audit"
+  short_description: "Audit what the xAI Grok Build CLI uploaded from your machine"
+  default_prompt: "Audit whether the Grok Build CLI uploaded my code or secrets to xAI, then summarize the findings."
